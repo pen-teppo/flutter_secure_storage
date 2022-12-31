@@ -39,9 +39,13 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
 
     if ([@"read" isEqualToString:call.method]) {
         NSString *key = arguments[@"key"];
-        NSString *value = [self read:key forGroup:groupId forAccountName:accountName forSynchronizable:synchronizable];
         
-        result(value);
+        @try {
+            NSString *value = [self read:key forGroup:groupId forAccountName:accountName forSynchronizable:synchronizable];
+            result(value);
+        } @catch (NSException *exception) {
+            result([FlutterError errorWithCode:@"FlutterMethodChannelError" message:exception.reason details:nil]);
+        }
     } else if ([@"write" isEqualToString:call.method]) {
         NSString *key = arguments[@"key"];
         NSString *value = arguments[@"value"];
@@ -170,6 +174,12 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
         NSData *data = (__bridge NSData*)resultData;
         value = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         CFRelease(resultData);
+    } else if(status == errSecItemNotFound){
+        [[NSException exceptionWithName:@"Exception" reason:@"NotFoundError" userInfo:nil] raise];
+    } else if(status == errSecAuthFailed){
+        [[NSException exceptionWithName:@"Exception" reason:@"AuthorityError" userInfo:nil] raise];
+    } else {
+        [[NSException exceptionWithName:@"Exception" reason:@"UnexpectedError" userInfo:nil] raise];
     }
     return value;
 }
